@@ -11,7 +11,11 @@ module.exports = {
         accent: "#94ECBE"
       },
       boxShadow: {
-        speakerShadow: "0px 0px 85.5px 15px rgba(110, 178, 87, 0.25)"
+        speakerShadow: "0px 0px 85.5px 15px rgba(110, 178, 87, 0.25)",
+        speakerShadowEnhanced: "0px 0px 85.5px 30px rgba(110, 178, 87, 0.25)"
+      },
+      animation: {
+        error: "error 1s ease-in-out both"
       }
     },
   },

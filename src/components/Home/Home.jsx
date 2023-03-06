@@ -1,40 +1,89 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import coinsImage from "../../assets/svg/coinsImage.svg";
+import audioFile from "../../assets/audio.mp3";
 import { FaVolumeUp } from "react-icons/fa";
 
 const Home = () => {
+  const firstInput = useRef(null);
+
+  useEffect(() => {
+    if (firstInput.current) {
+      firstInput.current.focus();
+    }
+  }, []);
+
+  const word = "HARSH";
+  const wordarr = word.split("");
+  const [incorrect, setIncorrect] = useState(true);
   const [points, setPoints] = useState(0);
   const [level, setLevel] = useState(1);
   const [attempts, setAttempts] = useState(3);
   const [message, setMessage] = useState();
-  const word = "HARSH";
-  const wordarr = word.split("");
-  let checkword = [];
+  const [checkword, setCheckWord] = useState(new Array(word.length).fill(""));
 
   const updateWord = (e, index) => {
     const input = e.target;
     const value = e.target.value;
-    checkword = [...wordarr];
-    checkword[index] = value;
-    if (e.key === "Backspace" && index - 1 >= 0) {
+    setCheckWord((prevWord) => {
+      const newWord = prevWord;
+      newWord[index] = value;
+      return newWord;
+    });
+    if (e.key === "Backspace" && input.value === "" && index - 1 >= 0) {
       input.value = "";
       input.previousElementSibling.focus();
-    } else if (value !== "" && index + 1 < wordarr.length) {
+    } else if (e.key === "ArrowLeft" && index - 1 >= 0) {
+      input.previousElementSibling.focus();
+    } else if (e.key === "ArrowRight" && index + 1 < wordarr.length) {
       input.nextElementSibling.focus();
-    }
+    } else if (value !== "" && index + 1 < wordarr.length && ((e.keyCode >= 65 && e.keyCode <= 92) || (e.keyCode >= 97 && e.keyCode <= 122))) {
+      input.nextElementSibling.focus();
+    } 
+  };
+
+  const resetWord = () => {};
+  const nextLevel = () => {};
+  const playAudio = () => {
+    const audio = new Audio(audioFile);
+    audio.play();
   };
 
   const calculatedata = () => {
-    const finalword = checkword.join("");
+    setMessage("");
+    const finalword = checkword.join("").toUpperCase();
+    // If word is not complete
     if (finalword.length !== wordarr.length) {
+      Array.from(document.getElementsByTagName("input")).forEach((el) => {
+        if (el.value === "" || el.value === " ") el.style.backgroundColor = "rgb(239 68 68)";
+      });
       setMessage(<p>Please complete the word!</p>);
+      // On correct answer
     } else if (finalword === word) {
       setPoints((prevPoints) => prevPoints + 10);
       setLevel((prevLevel) => prevLevel + 1);
-      setMessage(<p>You got it!</p>);
-    } else if (attempts > 0 && finalword != word) {
+      setMessage(<button className="px-6 py-3 bg-green-500 text-white font-bold rounded-lg">Next Level</button>);
+      Array.from(document.getElementsByTagName("input")).forEach((el) => {
+        el.style.backgroundColor = "rgb(34 197 94)";
+        el.setAttribute("disabled", true);
+      });
+      setIncorrect(false);
+      // On incorrect answer but attempts still left
+    } else if (attempts > 1 && finalword !== word) {
       setAttempts((prevAttempts) => prevAttempts - 1);
-      setMessage(<p>Oh oh!</p>);
+      // On attempts finished
+    } else if (attempts === 1) {
+      setAttempts((prevAttempts) => prevAttempts - 1);
+      setIncorrect(false);
+      Array.from(document.getElementsByTagName("input")).forEach((el) => {
+        el.style.backgroundColor = "rgb(239 68 68)";
+        el.style.color = "white";
+        el.setAttribute("disabled", true);
+      });
+      setMessage(
+        <button onClick={resetWord} className="p-3 bg-green-500 text-white font-bold rounded-lg">
+          Try this level again?
+        </button>
+      );
     }
   };
 
@@ -48,30 +97,50 @@ const Home = () => {
         </div>
       </div>
       <main className="flex flex-col items-center justify-center gap-y-6 ml-auto mr-auto w-fit grow p-6">
-        <div className="flex flex-row items-center justify-center w-20 h-20 rounded-full bg-secondary shadow shadow-speakerShadow mb-12">
+        <button
+          onClick={playAudio}
+          className="flex flex-row items-center justify-center w-20 h-20 rounded-full bg-secondary shadow-speakerShadow hover:w-24 hover:h-24  hover:shadow-speakerShadowEnhanced hover:cursor-pointer my-2 hover:bg-secondary transition-width duration-300"
+        >
           <FaVolumeUp className="text-5xl" />
-        </div>
-        <div className="flex flex-row justify-center items-center gap-x-3 mb-6">
-          {wordarr.map((item, index) => (
-            <input
-              type="text"
-              onKeyUp={(e) => updateWord(e, index)}
-              data-id={index}
-              key={index}
-              maxLength="1"
-              className="h-20 w-20 bg-accent rounded-lg text-[#1A1F16] uppercase text-4xl font-bold text-center focus:outline-none"
-            />
-          ))}
-        </div>
-        {message || (
-          <button onClick={calculatedata} className="rounded-lg px-6 py-2 bg-green-500 font-bold">
-            SUBMIT
-          </button>
-        )}
+        </button>
+        <form onSubmit={(e) => e.preventDefault()} className="flex flex-col justify-center items-center gap-y-3 mb-6">
+          <div className="flex flex-row justify-center items-center gap-x-3 mb-6">
+            {wordarr.map((item, index) => (
+              <input
+                ref={index === 0 ? firstInput : null}
+                type="text"
+                onKeyUp={(e) => updateWord(e, index)}
+                data-id={index}
+                key={index}
+                maxLength="1"
+                className="h-20 w-20 bg-accent focus:bg-green-500 rounded-lg text-[#1A1F16] uppercase text-4xl font-bold text-center focus:outline-none"
+              />
+            ))}
+          </div>
+          {message}
+          {incorrect && (
+            <button id="submitBtn" onClick={calculatedata} className="rounded-lg px-6 py-2 bg-green-500 font-bold">
+              SUBMIT
+            </button>
+          )}
+        </form>
         {attempts ? (
-          <div className="mt-auto bg-secondary text-white px-3 py-2 rounded-lg w-40 font-bold text-center shadow shadow-2xl hover:cursor-pointer">{attempts} attempts left</div>
+          <div className="mt-auto bg-secondary text-white px-3 py-2 rounded-lg w-fit font-bold text-center shadow-2xl hover:cursor-pointer" id="attempts">
+            {incorrect ? (
+              <>
+                <span className={`px-3 py-1 ${attempts === 3 ? "bg-green-500" : attempts === 2 ? "bg-yellow-500" : "bg-red-500"} rounded-lg mr-3 transition duration-300`}>{attempts}</span> attempts
+                left
+              </>
+            ) : (
+              <>
+                You took
+                <span className={`px-3 py-1 ${attempts === 3 ? "bg-green-500" : attempts === 2 ? "bg-yellow-500" : "bg-red-500"} rounded-lg mx-3 transition duration-300`}>{4 - attempts}</span>
+                attempt{4 - attempts === 1 ? "" : "s"}
+              </>
+            )}
+          </div>
         ) : (
-          <div className="mt-auto text-2xl">
+          <div className="mt-auto text-2xl animate-error">
             The word was <span className="bg-red-500 rounded-lg px-3 py-2 text-white font-bold">{word}</span>
           </div>
         )}
