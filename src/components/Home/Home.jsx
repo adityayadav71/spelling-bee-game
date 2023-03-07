@@ -1,9 +1,53 @@
 import React, { useState, useRef, useEffect } from "react";
 import coinsImage from "../../assets/svg/coinsImage.svg";
+import checkmark from "../../assets/svg/checkmark.svg";
+import cross from "../../assets/svg/cross.svg";
 import audioFile from "../../assets/audio.mp3";
+import successAudioFile from "../../assets/success.mp3";
+import errorAudioFile from "../../assets/error.mp3";
+import failureAudioFile from "../../assets/failure.mp3";
 import { FaVolumeUp } from "react-icons/fa";
+import { RxMagnifyingGlass } from "react-icons/rx";
 
 const Home = () => {
+  const word = "HARSH";
+  const wordarr = word.split("");
+  const [incorrect, setIncorrect] = useState(true);
+  const [points, setPoints] = useState(0);
+  const [currentPoints, setCurrentPoints] = useState(0);
+  const [success, setSuccess] = useState(false);
+  const [level, setLevel] = useState(1);
+  const [attempts, setAttempts] = useState(3);
+  const [message, setMessage] = useState();
+  const [checkword, setCheckWord] = useState(new Array(word.length).fill(""));
+  const [successAudio, setSuccessAudio] = useState(null);
+  const [errorAudio, setErrorAudio] = useState(null);
+  const [failureAudio, setFailureAudio] = useState(null);
+
+  useEffect(() => {
+    const audio = new Audio(successAudioFile);
+    audio.preload = "auto";
+    setSuccessAudio(audio);
+    const audio2 = new Audio(errorAudioFile);
+    audio2.preload = "auto";
+    setErrorAudio(audio2);
+    const audio3 = new Audio(failureAudioFile);
+    audio3.preload = "auto";
+    setFailureAudio(audio3);
+    setTimeout(() => {
+      if (!success) {
+        setMessage(
+          <button onClick={displayHints} className="px-6 py-2 bg-yellow-200 hover:bg-yellow-100 animate-expand opacity-0 text-black rounded-full w-fit flex flex-row items-center gap-x-2 font-bold">
+            <div className="flex items-center justify-center font-bold bg-yellow-500 w-5 h-5 text-sm rounded-full">
+              <RxMagnifyingGlass />
+            </div>
+            Hint
+          </button>
+        );
+      }
+    }, 30000);
+  }, []);
+
   const firstInput = useRef(null);
 
   useEffect(() => {
@@ -12,14 +56,9 @@ const Home = () => {
     }
   }, []);
 
-  const word = "HARSH";
-  const wordarr = word.split("");
-  const [incorrect, setIncorrect] = useState(true);
-  const [points, setPoints] = useState(0);
-  const [level, setLevel] = useState(1);
-  const [attempts, setAttempts] = useState(3);
-  const [message, setMessage] = useState();
-  const [checkword, setCheckWord] = useState(new Array(word.length).fill(""));
+  useEffect(() => {
+    setPoints((prevPoints) => prevPoints + currentPoints);
+  }, [currentPoints]);
 
   const updateWord = (e, index) => {
     const input = e.target;
@@ -38,11 +77,12 @@ const Home = () => {
       input.nextElementSibling.focus();
     } else if (value !== "" && index + 1 < wordarr.length && ((e.keyCode >= 65 && e.keyCode <= 92) || (e.keyCode >= 97 && e.keyCode <= 122))) {
       input.nextElementSibling.focus();
-    } 
+    }
   };
 
   const resetWord = () => {};
   const nextLevel = () => {};
+  const displayHints = () => {};
   const playAudio = () => {
     const audio = new Audio(audioFile);
     audio.play();
@@ -53,25 +93,33 @@ const Home = () => {
     const finalword = checkword.join("").toUpperCase();
     // If word is not complete
     if (finalword.length !== wordarr.length) {
+      errorAudio.play();
       Array.from(document.getElementsByTagName("input")).forEach((el) => {
         if (el.value === "" || el.value === " ") el.style.backgroundColor = "rgb(239 68 68)";
       });
       setMessage(<p>Please complete the word!</p>);
       // On correct answer
     } else if (finalword === word) {
-      setPoints((prevPoints) => prevPoints + 10);
-      setLevel((prevLevel) => prevLevel + 1);
-      setMessage(<button className="px-6 py-3 bg-green-500 text-white font-bold rounded-lg">Next Level</button>);
+      successAudio.play();
+      setMessage(
+        <button onClick={nextLevel} className="px-6 py-2 bg-green-500 text-white font-bold rounded-lg">
+          Next Level
+        </button>
+      );
       Array.from(document.getElementsByTagName("input")).forEach((el) => {
         el.style.backgroundColor = "rgb(34 197 94)";
         el.setAttribute("disabled", true);
       });
       setIncorrect(false);
+      setSuccess(true);
+      4 - attempts === 1 ? setCurrentPoints(30) : 4 - attempts === 2 ? setCurrentPoints(20) : setCurrentPoints(10);
       // On incorrect answer but attempts still left
     } else if (attempts > 1 && finalword !== word) {
+      errorAudio.play();
       setAttempts((prevAttempts) => prevAttempts - 1);
       // On attempts finished
     } else if (attempts === 1) {
+      failureAudio.play();
       setAttempts((prevAttempts) => prevAttempts - 1);
       setIncorrect(false);
       Array.from(document.getElementsByTagName("input")).forEach((el) => {
@@ -89,12 +137,14 @@ const Home = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="ml-auto mt-6 mr-6 w-fit rounded-lg p-3 flex flex-row items-center gap-x-3 bg-secondary">
+      <div className="relative ml-auto mt-6 mr-6 w-fit rounded-lg p-3 flex flex-row items-center gap-x-3 bg-secondary">
         <p className="font-bold">Level {level}</p>
         <div className="flex flex-row items-center gap-x-2 font-bold">
           <img src={coinsImage} alt="Coins" />
           <p>{points}</p>
         </div>
+
+        {success && <div className="absolute top-full right-3 text-yellow-500 font-bold animate-up"> + {currentPoints}</div>}
       </div>
       <main className="flex flex-col items-center justify-center gap-y-6 ml-auto mr-auto w-fit grow p-6">
         <button
@@ -103,7 +153,7 @@ const Home = () => {
         >
           <FaVolumeUp className="text-5xl" />
         </button>
-        <form onSubmit={(e) => e.preventDefault()} className="flex flex-col justify-center items-center gap-y-3 mb-6">
+        <form onSubmit={(e) => e.preventDefault()} className="flex flex-col justify-center items-center gap-y-3 mb-4">
           <div className="flex flex-row justify-center items-center gap-x-3 mb-6">
             {wordarr.map((item, index) => (
               <input
@@ -119,13 +169,18 @@ const Home = () => {
           </div>
           {message}
           {incorrect && (
-            <button id="submitBtn" onClick={calculatedata} className="rounded-lg px-6 py-2 bg-green-500 font-bold">
+            <button id="submitBtn" onClick={calculatedata} className="transition duration-300 rounded-lg px-6 py-2 bg-green-500 font-bold">
               SUBMIT
             </button>
           )}
         </form>
+        {success && (
+          <div className="animate-check flex flex-row items-center justify-center bg-green-800 w-10 h-10 rounded-full">
+            <img src={checkmark} alt="checkmark" />
+          </div>
+        )}
         {attempts ? (
-          <div className="mt-auto bg-secondary text-white px-3 py-2 rounded-lg w-fit font-bold text-center shadow-2xl hover:cursor-pointer" id="attempts">
+          <div className="mt-auto bg-secondary text-white px-3 py-2 rounded-lg w-fit font-bold text-center shadow-2xl hover:cursor-pointer">
             {incorrect ? (
               <>
                 <span className={`px-3 py-1 ${attempts === 3 ? "bg-green-500" : attempts === 2 ? "bg-yellow-500" : "bg-red-500"} rounded-lg mr-3 transition duration-300`}>{attempts}</span> attempts
@@ -140,9 +195,14 @@ const Home = () => {
             )}
           </div>
         ) : (
-          <div className="mt-auto text-2xl animate-error">
-            The word was <span className="bg-red-500 rounded-lg px-3 py-2 text-white font-bold">{word}</span>
-          </div>
+          <>
+            <div className="animate-check flex flex-row items-center justify-center bg-red-800 w-10 h-10 rounded-full">
+              <img src={cross} alt="cross" />
+            </div>
+            <div className="mt-auto text-2xl animate-error">
+              The word was <span className="bg-red-500 rounded-lg px-3 py-2 text-white font-bold">{word}</span>
+            </div>
+          </>
         )}
       </main>
     </div>
