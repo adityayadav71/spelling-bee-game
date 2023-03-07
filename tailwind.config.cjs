@@ -15,7 +15,10 @@ module.exports = {
         speakerShadowEnhanced: "0px 0px 85.5px 30px rgba(110, 178, 87, 0.25)"
       },
       animation: {
-        error: "error 1s ease-in-out both"
+        error: "error 1s ease-in-out both",
+        check: "check 1s ease-in-out",
+        expand: "expand 1s ease-in-out forwards",
+        up: "up 1s ease-in-out none"
       }
     },
   },

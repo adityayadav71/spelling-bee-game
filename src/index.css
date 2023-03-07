@@ -44,3 +44,41 @@ body {
     transform: translateX(10px);
   }
 }
+@keyframes up {
+  0% {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes check {
+  0% {
+    opacity: 0;
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(90deg);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes expand {
+  0% {
+    opacity: 0;
+    width: 0%;
+  }
+  50% {
+    width: 120px;
+  }
+  100% {
+    opacity: 1;
+    width: 120px;
+  }
+}
