@@ -2,16 +2,16 @@ import React, { useState, useRef, useEffect } from "react";
 import coinsImage from "../../assets/svg/coinsImage.svg";
 import checkmark from "../../assets/svg/checkmark.svg";
 import cross from "../../assets/svg/cross.svg";
-import audioFile from "../../assets/audio.mp3";
+import data from "../../data.json";
 import successAudioFile from "../../assets/success.mp3";
 import errorAudioFile from "../../assets/error.mp3";
 import failureAudioFile from "../../assets/failure.mp3";
 import { FaVolumeUp } from "react-icons/fa";
 import { RxMagnifyingGlass } from "react-icons/rx";
+import { fetchWordDetails } from "../../api";
 
 const Home = () => {
-  const word = "HARSH";
-  const wordarr = word.split("");
+  const [word, setWord] = useState("DEFAULT");
   const [incorrect, setIncorrect] = useState(true);
   const [points, setPoints] = useState(0);
   const [currentPoints, setCurrentPoints] = useState(0);
@@ -20,20 +20,37 @@ const Home = () => {
   const [attempts, setAttempts] = useState(3);
   const [message, setMessage] = useState();
   const [checkword, setCheckWord] = useState(new Array(word.length).fill(""));
+  const [wordAudio, setWordAudio] = useState(null);
   const [successAudio, setSuccessAudio] = useState(null);
   const [errorAudio, setErrorAudio] = useState(null);
   const [failureAudio, setFailureAudio] = useState(null);
 
+  const newWord = async () => {
+    const random = Math.floor(Math.random() * 100) + 1;
+    const word = data.words[random];
+    setWord(word.toUpperCase());
+    
+    const audioURL = await fetchWordDetails(word);
+    const wordAudio = new Audio(audioURL);
+    wordAudio.preload = "auto";
+    setWordAudio(wordAudio);
+  };
+
   useEffect(() => {
+    newWord();
+
     const audio = new Audio(successAudioFile);
     audio.preload = "auto";
     setSuccessAudio(audio);
+
     const audio2 = new Audio(errorAudioFile);
     audio2.preload = "auto";
     setErrorAudio(audio2);
+
     const audio3 = new Audio(failureAudioFile);
     audio3.preload = "auto";
     setFailureAudio(audio3);
+
     setTimeout(() => {
       if (!success) {
         setMessage(
@@ -46,20 +63,24 @@ const Home = () => {
         );
       }
     }, 30000);
-  }, []);
+  }, [level]);
 
+  const wordarr = word.split("");
+
+  // Focus on first input textbox by default
   const firstInput = useRef(null);
-
   useEffect(() => {
     if (firstInput.current) {
       firstInput.current.focus();
     }
   }, []);
 
+  // Add current level points to total points
   useEffect(() => {
     setPoints((prevPoints) => prevPoints + currentPoints);
   }, [currentPoints]);
 
+  // Update the word array for every keystroke in form
   const updateWord = (e, index) => {
     const input = e.target;
     const value = e.target.value;
@@ -80,15 +101,22 @@ const Home = () => {
     }
   };
 
-  const resetWord = () => {};
-  const nextLevel = () => {};
-  const displayHints = () => {};
-  const playAudio = () => {
-    const audio = new Audio(audioFile);
-    audio.play();
+  const resetWord = () => {
+    newWord();
   };
 
-  const calculatedata = () => {
+  const nextLevel = () => {
+    setLevel((prevLevel) => prevLevel + 1);
+    window.reload();
+  };
+
+  const displayHints = () => {};
+  
+  const playAudio = () => {
+    wordAudio.play();
+  };
+
+  const matchWord = () => {
     setMessage("");
     const finalword = checkword.join("").toUpperCase();
     // If word is not complete
@@ -143,7 +171,6 @@ const Home = () => {
           <img src={coinsImage} alt="Coins" />
           <p>{points}</p>
         </div>
-
         {success && <div className="absolute top-full right-3 text-yellow-500 font-bold animate-up"> + {currentPoints}</div>}
       </div>
       <main className="flex flex-col items-center justify-center gap-y-6 ml-auto mr-auto w-fit grow p-6">
@@ -169,7 +196,7 @@ const Home = () => {
           </div>
           {message}
           {incorrect && (
-            <button id="submitBtn" onClick={calculatedata} className="transition duration-300 rounded-lg px-6 py-2 bg-green-500 font-bold">
+            <button id="submitBtn" onClick={matchWord} className="transition duration-300 rounded-lg px-6 py-2 bg-green-500 font-bold">
               SUBMIT
             </button>
           )}
