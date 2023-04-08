@@ -14,9 +14,9 @@ const Home = () => {
   const [word, setWord] = useState("DEFAULT");
   const [incorrect, setIncorrect] = useState(true);
   const [points, setPoints] = useState(0);
-  const [currentPoints, setCurrentPoints] = useState(0);
+  const [currentPoints, setCurrentPoints] = useState(parseInt(JSON.parse(localStorage?.getItem("stats"))?.coins) || 0);
   const [success, setSuccess] = useState(false);
-  const [level, setLevel] = useState(1);
+  const [level, setLevel] = useState(parseInt(JSON.parse(localStorage?.getItem("stats"))?.level) || 1);
   const [attempts, setAttempts] = useState(3);
   const [message, setMessage] = useState();
   const [checkword, setCheckWord] = useState(new Array(word.length).fill(""));
@@ -29,7 +29,7 @@ const Home = () => {
     const random = Math.floor(Math.random() * 100) + 1;
     const word = data.words[random];
     setWord(word.toUpperCase());
-    
+
     const audioURL = await fetchWordDetails(word);
     const wordAudio = new Audio(audioURL);
     wordAudio.preload = "auto";
@@ -37,6 +37,11 @@ const Home = () => {
   };
 
   useEffect(() => {
+    const gameStats = {
+      level: level,
+      coins: points,
+    };
+    localStorage.setItem("stats", JSON.stringify(gameStats));
     newWord();
 
     const audio = new Audio(successAudioFile);
@@ -62,8 +67,8 @@ const Home = () => {
           </button>
         );
       }
-    }, 30000);
-  }, [level]);
+    }, 10000);
+  }, [level, points]);
 
   const wordarr = word.split("");
 
@@ -107,11 +112,12 @@ const Home = () => {
 
   const nextLevel = () => {
     setLevel((prevLevel) => prevLevel + 1);
-    window.reload();
+    resetWord();
+    window.location.reload(true);
   };
 
   const displayHints = () => {};
-  
+
   const playAudio = () => {
     wordAudio.play();
   };
@@ -129,11 +135,6 @@ const Home = () => {
       // On correct answer
     } else if (finalword === word) {
       successAudio.play();
-      setMessage(
-        <button onClick={nextLevel} className="px-6 py-2 bg-green-500 text-white font-bold rounded-lg">
-          Next Level
-        </button>
-      );
       Array.from(document.getElementsByTagName("input")).forEach((el) => {
         el.style.backgroundColor = "rgb(34 197 94)";
         el.setAttribute("disabled", true);
@@ -195,9 +196,13 @@ const Home = () => {
             ))}
           </div>
           {message}
-          {incorrect && (
+          {incorrect ? (
             <button id="submitBtn" onClick={matchWord} className="transition duration-300 rounded-lg px-6 py-2 bg-green-500 font-bold">
               SUBMIT
+            </button>
+          ) : (
+            <button onClick={nextLevel} className="px-6 py-2 bg-green-500 text-white font-bold rounded-lg">
+              Next Level
             </button>
           )}
         </form>
